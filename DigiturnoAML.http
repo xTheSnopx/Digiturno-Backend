@@ -1,0 +1,6 @@
+@DigiturnoAML_HostAddress = http://localhost:5237
+
+GET {{DigiturnoAML_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
