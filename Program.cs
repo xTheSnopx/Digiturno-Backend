@@ -11,9 +11,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // --- JWT Authentication ---
-var jwtKey = builder.Configuration["Jwt:Key"]!;
-var jwtIssuer = builder.Configuration["Jwt:Issuer"]!;
-var jwtAudience = builder.Configuration["Jwt:Audience"]!;
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SecretKeyForLocalDevelopmentOnly_DoNotUseInProduction!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "DigiturnoAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "DigiturnoFront";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -37,11 +37,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:3000"
-            )
+        policy.SetIsOriginAllowed(_ => true) // Allow any origin in this case to simplify deployment
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

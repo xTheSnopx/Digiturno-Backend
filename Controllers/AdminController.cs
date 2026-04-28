@@ -18,7 +18,7 @@ public class AdminController : ControllerBase
         _db = db;
     }
 
-    // GET /api/admin/tickets  — Todos los tickets del día
+    // GET /api/admin/tickets  — Todos los tickets del día (excluye cancelados del pasado)
     [HttpGet("tickets")]
     public async Task<IActionResult> GetTicketsHoy()
     {
@@ -36,6 +36,7 @@ public class AdminController : ControllerBase
                 t.CargoEmpleado,
                 t.Descripcion,
                 Estado = t.Estado.ToString(),
+                t.NombreTecnico,
                 t.CreadoEn,
                 t.AtendidoEn,
                 t.ResueltoEn
@@ -47,8 +48,11 @@ public class AdminController : ControllerBase
 
     // PUT /api/admin/tickets/{id}/atender
     [HttpPut("tickets/{id}/atender")]
-    public async Task<IActionResult> AtenderTicket(int id)
+    public async Task<IActionResult> AtenderTicket(int id, [FromBody] UpdateTicketDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var ticket = await _db.Tickets.FindAsync(id);
         if (ticket == null) return NotFound();
 
@@ -57,15 +61,19 @@ public class AdminController : ControllerBase
 
         ticket.Estado = TicketEstado.EnAtencion;
         ticket.AtendidoEn = DateTime.UtcNow;
+        ticket.NombreTecnico = dto.NombreTecnico;
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Ticket en atención.", ticket.Numero });
+        return Ok(new { message = "Ticket en atención.", ticket.Numero, ticket.NombreTecnico });
     }
 
     // PUT /api/admin/tickets/{id}/resolver
     [HttpPut("tickets/{id}/resolver")]
-    public async Task<IActionResult> ResolverTicket(int id)
+    public async Task<IActionResult> ResolverTicket(int id, [FromBody] UpdateTicketDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var ticket = await _db.Tickets.FindAsync(id);
         if (ticket == null) return NotFound();
 
@@ -74,22 +82,13 @@ public class AdminController : ControllerBase
 
         ticket.Estado = TicketEstado.Resuelto;
         ticket.ResueltoEn = DateTime.UtcNow;
+        // Solo sobreescribir si resuelve sin haber atendido antes
+        if (string.IsNullOrEmpty(ticket.NombreTecnico))
+            ticket.NombreTecnico = dto.NombreTecnico;
+
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Ticket resuelto.", ticket.Numero });
-    }
-
-    // DELETE /api/admin/tickets/{id}  — Cancelar
-    [HttpDelete("tickets/{id}")]
-    public async Task<IActionResult> CancelarTicket(int id)
-    {
-        var ticket = await _db.Tickets.FindAsync(id);
-        if (ticket == null) return NotFound();
-
-        ticket.Estado = TicketEstado.Cancelado;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { message = "Ticket cancelado.", ticket.Numero });
+        return Ok(new { message = "Ticket resuelto.", ticket.Numero, ticket.NombreTecnico });
     }
 
     // GET /api/admin/stats  — Resumen del día
@@ -98,15 +97,16 @@ public class AdminController : ControllerBase
     {
         var hoyInicio = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
         var hoyFin = hoyInicio.AddDays(1);
-        var tickets = await _db.Tickets.Where(t => t.CreadoEn >= hoyInicio && t.CreadoEn < hoyFin).ToListAsync();
+        var tickets = await _db.Tickets
+            .Where(t => t.CreadoEn >= hoyInicio && t.CreadoEn < hoyFin)
+            .ToListAsync();
 
         return Ok(new
         {
-            Total = tickets.Count,
+            Total     = tickets.Count,
             Esperando = tickets.Count(t => t.Estado == TicketEstado.Esperando),
             EnAtencion = tickets.Count(t => t.Estado == TicketEstado.EnAtencion),
-            Resueltos = tickets.Count(t => t.Estado == TicketEstado.Resuelto),
-            Cancelados = tickets.Count(t => t.Estado == TicketEstado.Cancelado)
+            Resueltos = tickets.Count(t => t.Estado == TicketEstado.Resuelto)
         });
     }
 }

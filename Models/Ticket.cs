@@ -30,6 +30,9 @@ public class Ticket
 
     public TicketEstado Estado { get; set; } = TicketEstado.Esperando;
 
+    /// <summary>Técnico que está atendiendo o resolvió el ticket.</summary>
+    public string? NombreTecnico { get; set; }
+
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
     public DateTime? AtendidoEn { get; set; }
     public DateTime? ResueltoEn { get; set; }

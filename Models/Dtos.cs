@@ -27,3 +27,10 @@ public class LoginDto
     [Required]
     public string Password { get; set; } = string.Empty;
 }
+
+public class UpdateTicketDto
+{
+    [Required(ErrorMessage = "El nombre del técnico es obligatorio.")]
+    [MaxLength(150)]
+    public string NombreTecnico { get; set; } = string.Empty;
+}

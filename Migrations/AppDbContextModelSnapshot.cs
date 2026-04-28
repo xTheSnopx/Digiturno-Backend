@@ -56,7 +56,7 @@ namespace DigiturnoAML.Migrations
                         {
                             Id = 1,
                             NombreCompleto = "Administrador TI",
-                            PasswordHash = "$2a$11$/iOFSJrTt/.Hggd4KpEV7ecAi2FxDwq1/ypka55E2aOvwNs6hEaTq",
+                            PasswordHash = "$2a$11$KXGt.LE/Qob1Q8QjLc88Fe44EyOnZMNbWa7stbr9gRFINiV/MxspG",
                             Username = "admin"
                         });
                 });
@@ -97,6 +97,9 @@ namespace DigiturnoAML.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<string>("NombreTecnico")
+                        .HasColumnType("text");
 
                     b.Property<string>("Numero")
                         .IsRequired()
